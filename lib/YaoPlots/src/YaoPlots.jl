@@ -12,6 +12,7 @@ using LinearAlgebra: tr
 export CircuitStyles, vizcircuit, darktheme!, lighttheme!
 export bloch_sphere, BlochStyles
 export plot
+export texcircuit, latexify
 
 """An alias of `vizcircuit`"""
 plot(;kwargs...) = x->plot(x;kwargs...)
@@ -20,5 +21,6 @@ plot(blk::AbstractBlock; kwargs...) = vizcircuit(blk; kwargs...)
 include("helperblock.jl")
 include("vizcircuit.jl")
 include("bloch.jl")
+include("texcircuit.jl")
 
 end
