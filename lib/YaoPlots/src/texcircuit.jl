@@ -1,3 +1,6 @@
+const MINIMAL_HEAD = "\\documentclass{minimal}\n\\usepackage[matrix,frame,arrow]{xypic}\n\\usepackage[braket]{qcircuit}\n\\begin{document}\n\\["
+const MINIMAL_FOOT = "\n\\]\n\\end{document}"
+
 struct CircuitTeX
 	reg::Vector{String}
 	idx::Vector{Int}
@@ -24,7 +27,7 @@ function polish!(c::CircuitTeX)
 	end
 	newcolumn!(c)
 	map!(x -> x*"\\qw", c.reg, c.reg)
-	map!(x -> "\\qw & "*x, c.reg, c.reg)
+	map!(x -> "& \\qw & "*x, c.reg, c.reg)
 	for i in 1:length(c.reg)-1
 		c.reg[i] *= " \\\\"
 	end
@@ -38,6 +41,14 @@ newcolumn!(c::CircuitTeX) = map!(x -> x*" & ",c.reg, c.reg)
 function draw!(c::CircuitTeX, blk::AbstractBlock, address, controls)
 	return 
 end
+# Special primitive gates
+function draw!(c::CircuitTeX, ::I2Gate, address, controls)
+    return
+end
+function draw!(c::CircuitTeX, ::IdentityGate, address, controls)
+    return
+end
+
 
 function draw!(c::CircuitTeX, blk::ChainBlock, address, controls)
     for block in subblocks(blk)
@@ -51,7 +62,7 @@ addblock!(c::CircuitTeX, blk::Function) = addblock!(c, blk(length(c.reg)))
 """
     texcircuit(circuit; col_spacing=1, row_spacing=0.7, filename=nothing)
 
-Generate LaTeX a `Yao` quantum circuit.
+Generate a LaTeX QCircuit from a `Yao` quantum circuit.
 
 ### Keyword Arguments
 * `col_spacing` is the circuit column width.
@@ -73,14 +84,25 @@ They are defined as:
 * CircuitStyles.gate_bgcolor = Ref("transparent")   # gate background color
 * CircuitStyles.textcolor = Ref("#000000")          # text color
 """
-function texcircuit(blk::AbstractBlock; col_spacing=1.0, row_spacing=0.7, filename=nothing)
+function texcircuit(blk::AbstractBlock; col_spacing=1.0, row_spacing=0.7, filename=nothing, minimal_wrap=false)
 	c = CircuitTeX(blk,col_spacing,row_spacing)
 	h = header(c)
 	addblock!(c,blk)
 	polish!(c)
 	t = footer(c)
 	tex = join([h,c.reg...,t],"\n")
-    return tex
+	if minimal_wrap
+		tex = join([MINIMAL_HEAD, tex, MINIMAL_FOOT])
+	end
+	if !(filename === nothing)
+		@assert filename[end-3:end] == ".tex" "filename argument should end in .tex."
+		io = open(filename, "w")
+		write(io, tex)
+		close(io)
+		return
+	else
+    	return tex
+	end
 end
 
 """An alias of `texcircuit`"""
